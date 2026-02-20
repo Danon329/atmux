@@ -13,15 +13,15 @@ declare -a WINDOW_NAMES # that should create an Array I think
 while getopts "s:m" opts; do
 	case $opts in
 		s)
-			SESSION_NAME=$OPTARG
+			if [ ! -z "$OPTARG" ]; then
+				SESSION_NAME=$OPTARG
+			fi
 			;;
 		m)
 			MANUAL_CREATION=true
 			;;
 	esac
 done
-
-# TODO: Get running processes for tmux, get names, set names running true, every other session false
 
 # Start file lock
 flock 200
@@ -59,19 +59,27 @@ fi
 TMUX_HAS_SESSION=$(python3 session_manager.py "check" $SESSION_NAME)
 IS_SESSION_RUNNING=$(python3 session_manager.py "get-running" $SESSION_NAME)
 
-if ["$TMUX_HAS_SESSION" = "True"]; then
-	if ["$IS_SESSION_RUNNING" = "True"]; then
+if [ "$TMUX_HAS_SESSION" = "True" ]; then
+	if [ "$IS_SESSION_RUNNING" = "True" ]; then
 		echo "Session is already running"
 		echo "Hope you called through atmux for running control"
+		flock -u 200
 	else
 		# TODO:
-		# attach tmux (maybe in other window)
-		# rename own window, to close own window after use
-		# get running threads, check for tmux windows
-		# Think about how to know, when tmux window is closed
+		# set running to true
+		# attach tmux
+		# set running to false
 	fi
+else
+	# TODO:
+	# Create session, check for no manual session creation (I don't want to think about that currently)
+	# Check whether session already exists in serialized form, then get details and create session
+	# Else make default creation
 fi
 
 # TODO:
-# if manual creation needed, get extra info
-
+# First check for "active" tmux sessions (detached and attached)
+# if current session was exited, prompt whether want to delete from serialization or not
+# if delete, delete from file
+# else:
+# After detaching, get windows of current session, to serialize in file, with the names

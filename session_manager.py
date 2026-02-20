@@ -62,6 +62,7 @@ def get_session_running(session_name: str) -> str:
 def set_session_running(session_name: str, session_running: str):
     session_map: dict = load_sessions()
     session_map[session_name]["is_session_running"] = session_running
+    save_sessions(session_map)
 
 
 def main():
@@ -120,6 +121,7 @@ def main():
         case "set_all_running_false":
             # TODO: Write a function that iterates through all sessions and sets them false
             pass
+        # TODO: Create a delete session function, if session gets exited
 
 
 if __name__ == "__main__":
