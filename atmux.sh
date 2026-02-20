@@ -59,33 +59,36 @@ fi
 # TODO: Now think about attachment or creation of needed session
 
 # Check whether Session already exists
-TMUX_CURRNET_SESSIONS=$(tmux list-sessions -F "#{session_name}" 2>/tmp/null | tr '\n' ' ') # change \n into space seperation -> create flat string
+TMUX_CURRENT_SESSIONS=$(tmux list-sessions -F "#{session_name}" 2>/tmp/null | tr '\n' ' ') # change \n into space seperation -> create flat string
 FILE_HAS_SESSION=$(python3 session_manager.py check $SESSION_NAME)
-IS_SESSION_RUNNING=$(python3 session_manager.py get-running $SESSION_NAME)
 SESSION_EXISTS=false
 
-if [ "$FILE_HAS_SESSION" = "True"]; then
-	if [[ " TMUX_CURRNET_SESSIONS " == *" $SESSION_NAME "* ]]; then
-		SESSION_EXISTS=true
-	fi
+if [[ " $TMUX_CURRENT_SESSIONS " == *" $SESSION_NAME "* ]]; then
+	SESSION_EXISTS=true
 fi
 
 if [ "$SESSION_EXISTS" ]; then
-	if [ "$IS_SESSION_RUNNING" = "True" ]; then
-		echo "Session is already running"
-		echo "Hope you called through atmux for running control"
-		flock -u 200
+	if [ "$FILE_HAS_SESSION" = "True" ]; then
+		IS_SESSION_RUNNING=$(python3 session_manager.py get-running $SESSION_NAME)
 
-		exit(0)
+		if [ "$IS_SESSION_RUNNING" = "True" ]; then
+			echo "Session is already running"
+			echo "Hope you called through atmux for running control"
+			flock -u 200
+
+			exit(0)
+		else
+			echo "Activating session"
+			python3 session_manager.py set_running $SESSION_NAME True
+			flock -u 200
+
+			tmux attach -t $SESSION_NAME # will pause script here, waiting for detach or exit
+
+			flock 200
+			python3 session_manager.py set_running $SESSION_NAME False
+		fi
 	else
-		echo "Activating session"
-		python3 session_manager.py set_running $SESSION_NAME True
-		flock -u 200
-
-		tmux attach -t $SESSION_NAME # will pause script here, waiting for detach or exit
-
-		flock 200
-		python3 session_manager.py set_running $SESSION_NAME False
+		# TODO: Create Session in file with every needed detail from existing session
 	fi
 else
 	# TODO:
