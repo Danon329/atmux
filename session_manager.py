@@ -21,13 +21,13 @@ def save_sessions(hashmap: dict):
         json.dump(hashmap, file, indent=4)
 
 
-def check_session_exists(session_name: str) -> bool:
+def check_session_exists(session_name: str) -> str:
     sessions_map: dict = load_sessions()
 
     if sessions_map.get(session_name) is not None:
-        return True
+        return "True"
     else:
-        return False
+        return "False"
 
 
 def set_session(

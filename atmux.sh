@@ -27,28 +27,31 @@ done
 flock 200
 
 # Get tmux sessions
-EXISTING_SESSIONS=$(tmux list-sessions -F "#{session_name} #{session_attached}" 2>dev/null)
+echo "Getting existing tmux sessions"
+EXISTING_SESSIONS=$(tmux list-sessions -F "#{session_name} #{session_attached}" 2>/dev/null)
 
 # Look whether there even is an active tmux server
-if [ -z "$EXISTING_SESSIONS "]; then
-	python3 session_manager.py set_all_running_false
+if [ -z "$EXISTING_SESSIONS" ]; then
+	echo "No active tmux server -> setting all sessions to not running"
+	python3 session_manager.py set-all-running-false
 else
+	echo "Comparing running sessions against running in file"
 	PRESUMED_RUNNING=$(python3 session_manager.py get-running-all)
 	read -r -a PRESUMED_RUNNING_ITEMS <<< "$PRESUMED_RUNNING"
 
 	# Check whether in save there are running sessions that don't even exist in the server
 	for PRESUMED_RUNNING_ITEM in "${PRESUMED_RUNNING_ITEMS[@]}"; do
 		if [[ " $EXISTING_SESSIONS " != *" $PRESUMED_RUNNING_ITEM "* ]]; then
-			python3 session_manager.py set_running $PRESUMED_RUNNING_ITEM False
+			python3 session_manager.py set-running $PRESUMED_RUNNING_ITEM False
 		fi
 	done
 
 	# Update the running and non-running sessions in file against actual tmux server
 	while read -r EXISTING_SESSION_NAME IS_RUNNING; do
-		if ["$IS_RUNNING" -gt 0]; then
-			python3 session_manager.py set_running $EXISTING_SESSION_NAME True
+		if [ "$IS_RUNNING" -gt 0 ]; then
+			python3 session_manager.py set-running $EXISTING_SESSION_NAME True
 		else
-			python3 session_manager.py set_running $EXISTING_SESSION_NAME False
+			python3 session_manager.py set-running $EXISTING_SESSION_NAME False
 		fi
 	done <<< "$EXISTING_SESSIONS" # feeds the data into the loop
 fi
@@ -56,23 +59,37 @@ fi
 # TODO: Now think about attachment or creation of needed session
 
 # Check whether Session already exists
-TMUX_HAS_SESSION=$(python3 session_manager.py "check" $SESSION_NAME)
-IS_SESSION_RUNNING=$(python3 session_manager.py "get-running" $SESSION_NAME)
+TMUX_CURRNET_SESSIONS=$(tmux list-sessions -F "#{session_name}" 2>/tmp/null | tr '\n' ' ') # change \n into space seperation -> create flat string
+FILE_HAS_SESSION=$(python3 session_manager.py check $SESSION_NAME)
+IS_SESSION_RUNNING=$(python3 session_manager.py get-running $SESSION_NAME)
+SESSION_EXISTS=false
 
-if [ "$TMUX_HAS_SESSION" = "True" ]; then
+if [ "$FILE_HAS_SESSION" = "True"]; then
+	if [[ " TMUX_CURRNET_SESSIONS " == *" $SESSION_NAME "* ]]; then
+		SESSION_EXISTS=true
+	fi
+fi
+
+if [ "$SESSION_EXISTS" ]; then
 	if [ "$IS_SESSION_RUNNING" = "True" ]; then
 		echo "Session is already running"
 		echo "Hope you called through atmux for running control"
 		flock -u 200
+
+		exit(0)
 	else
-		# TODO:
-		# set running to true
-		# attach tmux
-		# set running to false
+		echo "Activating session"
+		python3 session_manager.py set_running $SESSION_NAME True
+		flock -u 200
+
+		tmux attach -t $SESSION_NAME # will pause script here, waiting for detach or exit
+
+		flock 200
+		python3 session_manager.py set_running $SESSION_NAME False
 	fi
 else
 	# TODO:
-	# Create session, check for no manual session creation (I don't want to think about that currently)
+	# Create session, don't check for manual session creation (I don't want to think about that currently)
 	# Check whether session already exists in serialized form, then get details and create session
 	# Else make default creation
 fi
