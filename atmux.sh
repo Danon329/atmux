@@ -2,12 +2,8 @@
 
 exec 200>/tmp/atmux.lock
 
-MANUAL_CREATION=false
 SESSION_NAME="0"
-
-SESSION_PATH=$PWD
-NUMBER_WINDOWS=1
-declare -a WINDOW_NAMES # that should create an Array I think
+MANUAL_CREATION=false
 
 # get option flags
 while getopts "s:m" opts; do
@@ -33,25 +29,25 @@ EXISTING_SESSIONS=$(tmux list-sessions -F "#{session_name} #{session_attached}" 
 # Look whether there even is an active tmux server
 if [ -z "$EXISTING_SESSIONS" ]; then
 	echo "No active tmux server -> setting all sessions to not running"
-	python3 session_manager.py set-all-running-false
+	python3 session_manager.py "set-all-running-false"
 else
 	echo "Comparing running sessions against running in file"
-	PRESUMED_RUNNING=$(python3 session_manager.py get-running-all)
+	PRESUMED_RUNNING=$(python3 session_manager.py "get-running-all")
 	read -r -a PRESUMED_RUNNING_ITEMS <<< "$PRESUMED_RUNNING"
 
 	# Check whether in save there are running sessions that don't even exist in the server
 	for PRESUMED_RUNNING_ITEM in "${PRESUMED_RUNNING_ITEMS[@]}"; do
 		if [[ " $EXISTING_SESSIONS " != *" $PRESUMED_RUNNING_ITEM "* ]]; then
-			python3 session_manager.py set-running $PRESUMED_RUNNING_ITEM False
+			python3 session_manager.py "set-running" "$PRESUMED_RUNNING_ITEM" "False"
 		fi
 	done
 
 	# Update the running and non-running sessions in file against actual tmux server
 	while read -r EXISTING_SESSION_NAME IS_RUNNING; do
 		if [ "$IS_RUNNING" -gt 0 ]; then
-			python3 session_manager.py set-running $EXISTING_SESSION_NAME True
+			python3 session_manager.py "set-running" "$EXISTING_SESSION_NAME" "True"
 		else
-			python3 session_manager.py set-running $EXISTING_SESSION_NAME False
+			python3 session_manager.py "set-running" "$EXISTING_SESSION_NAME" "False"
 		fi
 	done <<< "$EXISTING_SESSIONS" # feeds the data into the loop
 fi
@@ -59,9 +55,13 @@ fi
 # TODO: Now think about attachment or creation of needed session
 
 # Check whether Session already exists
-TMUX_CURRENT_SESSIONS=$(tmux list-sessions -F "#{session_name}" 2>/tmp/null | tr '\n' ' ') # change \n into space seperation -> create flat string
-FILE_HAS_SESSION=$(python3 session_manager.py check $SESSION_NAME)
+TMUX_CURRENT_SESSIONS=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | tr '\n' ' ') # change \n into space seperation -> create flat string
+FILE_HAS_SESSION=$(python3 session_manager.py "check" "$SESSION_NAME")
 SESSION_EXISTS=false
+
+SESSION_PATH=$PWD
+WINDOW_COUNT=1
+WINDOW_NAMES="zsh"
 
 if [[ " $TMUX_CURRENT_SESSIONS " == *" $SESSION_NAME "* ]]; then
 	SESSION_EXISTS=true
@@ -69,7 +69,7 @@ fi
 
 if [ "$SESSION_EXISTS" ]; then
 	if [ "$FILE_HAS_SESSION" = "True" ]; then
-		IS_SESSION_RUNNING=$(python3 session_manager.py get-running $SESSION_NAME)
+		IS_SESSION_RUNNING=$(python3 session_manager.py "get-running" "$SESSION_NAME")
 
 		if [ "$IS_SESSION_RUNNING" = "True" ]; then
 			echo "Session is already running"
@@ -78,17 +78,42 @@ if [ "$SESSION_EXISTS" ]; then
 
 			exit(0)
 		else
-			echo "Activating session"
-			python3 session_manager.py set_running $SESSION_NAME True
+			echo "Attaching session"
+			python3 session_manager.py "set_running" "$SESSION_NAME" "True"
 			flock -u 200
 
 			tmux attach -t $SESSION_NAME # will pause script here, waiting for detach or exit
 
 			flock 200
-			python3 session_manager.py set_running $SESSION_NAME False
+			python3 session_manager.py "set_running" "$SESSION_NAME" "False"
 		fi
 	else
-		# TODO: Create Session in file with every needed detail from existing session
+		# NOTE: Can be that session exists and is attached in tmux server but not in file. Need to check that as well
+
+		echo "Creating session in file"
+		# Session path
+		SESSION_PATHS=$(tmux list-sessions -F "#{session_name} #{session_path}" 2>/dev/null)
+		while read TMUX_SESSION_NAME TMUX_SESSION_PATH; do
+			if [ "$TMUX_SESSION_NAME" = "$SESSION_NAME" ]; then
+				SESSION_PATH="$TMUX_SESSION_PATH"
+			fi
+		done <<< "$SESSION_PATHS"
+
+		# Window count
+		WINDOW_NAMES=$(tmux list-windows -t "$SESSION_NAME" -F \#W 2>/dev/null | tr '\n' ' ')
+		WINDOW_COUNT=$(wc -w <<< "$WINDOW_NAMES")
+
+		# set in file
+		python3 session_manager.py "set" "$SESSION_NAME" "$SESSION_PATH" "$WINDOW_COUNT" "$WINDOW_NAMES"
+
+		echo "Attaching to session"
+		python3 session_manager.py "set-running" "$SESSION_NAME" "True"
+		flock -u 200
+
+		tmux attach -t $SESSION_NAME
+
+		flock 200
+		python3 session_manager.py "set-running" "$SESSION_NAME" "True"
 	fi
 else
 	# TODO:

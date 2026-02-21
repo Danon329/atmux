@@ -34,9 +34,11 @@ def set_session(
     session_name: str,
     session_path: str,
     window_count: int,
-    window_names: dict,
+    window_names_str: str,
     is_session_running: str,
 ):
+    window_names = window_names_str.split()
+
     session_map: dict = load_sessions()
     session_details: dict = {
         "session_path": session_path,
@@ -73,7 +75,7 @@ def main():
     session_path = None
     window_count = None
     is_session_running = None
-    window_names = {}
+    window_names_str = None
 
     match command:
         case "check":
@@ -86,23 +88,21 @@ def main():
             if len(sys.argv) > 4:
                 session_path = sys.argv[3]
                 window_count = int(sys.argv[4])
-
-                for i in range(window_count):
-                    window_names[i + 1] = sys.argv[5 + i]
+                window_names_str = sys.argv[5]
             elif len(sys.argv) == 4:
                 session_path = sys.argv[3]
                 window_count = 1
-                window_names = {1: "zsh"}
+                window_names_str = "zsh"
             else:
                 session_path = "~"
                 window_count = 1
-                window_names = {1: "zsh"}
+                window_names_str = "zsh"
 
             set_session(
                 session_name,
                 session_path,
                 window_count,
-                window_names,
+                window_names_str,
                 "False",  # set running always false, handle it manually through extra call
             )
         case "get":
@@ -118,7 +118,7 @@ def main():
             session_name = sys.argv[2]
             is_session_running = sys.argv[3]
             set_session_running(session_name, is_session_running)
-        case "set_all_running_false":
+        case "set-all-running-false":
             # TODO: Write a function that iterates through all sessions and sets them false
             pass
         # TODO: Create a delete session function, if session gets exited
