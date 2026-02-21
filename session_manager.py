@@ -34,11 +34,9 @@ def set_session(
     session_name: str,
     session_path: str,
     window_count: int,
-    window_names_str: str,
+    window_names: str,
     is_session_running: str,
 ):
-    window_names = window_names_str.split()
-
     session_map: dict = load_sessions()
     session_details: dict = {
         "session_path": session_path,
@@ -51,9 +49,19 @@ def set_session(
     save_sessions(session_map)
 
 
-def get_session(session_name: str) -> str:
+def get_session_path(session_name: str) -> str:
     session_map: dict = load_sessions()
-    return session_map[session_name]
+    return session_map[session_name]["session_path"]
+
+
+def get_window_count(session_name: str) -> int:
+    session_map: dict = load_sessions()
+    return session_map[session_name]["window_count"]
+
+
+def get_window_names(session_name: str) -> str:
+    session_map: dict = load_sessions()
+    return session_map[session_name]["window_names"]
 
 
 def get_session_running(session_name: str) -> str:
@@ -75,7 +83,7 @@ def main():
     session_path = None
     window_count = None
     is_session_running = None
-    window_names_str = None
+    window_names = None
 
     match command:
         case "check":
@@ -88,26 +96,32 @@ def main():
             if len(sys.argv) > 4:
                 session_path = sys.argv[3]
                 window_count = int(sys.argv[4])
-                window_names_str = sys.argv[5]
+                window_names = sys.argv[5]
             elif len(sys.argv) == 4:
                 session_path = sys.argv[3]
                 window_count = 1
-                window_names_str = "zsh"
+                window_names = "zsh"
             else:
                 session_path = "~"
                 window_count = 1
-                window_names_str = "zsh"
+                window_names = "zsh"
 
             set_session(
                 session_name,
                 session_path,
                 window_count,
-                window_names_str,
+                window_names,
                 "False",  # set running always false, handle it manually through extra call
             )
-        case "get":
+        case "get-session-path":
             session_name = sys.argv[2]
-            # TODO: need specific gets. Cannot just parse a dict to bash (I am not gifted enough for that)
+            print(get_session_path(session_name))
+        case "get-window-count":
+            session_name = sys.argv[2]
+            print(get_window_count(session_name))
+        case "get-window-names":
+            session_name = sys.argv[2]
+            print(get_window_names(session_name))
         case "get-running-all":
             # TODO: get all running sessions with running = True. Give them back in one string --format: "session1 session2 session3"
             pass

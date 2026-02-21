@@ -79,13 +79,13 @@ if [ "$SESSION_EXISTS" ]; then
 			exit(0)
 		else
 			echo "Attaching session"
-			python3 session_manager.py "set_running" "$SESSION_NAME" "True"
+			python3 session_manager.py "set-running" "$SESSION_NAME" "True"
 			flock -u 200
 
 			tmux attach -t $SESSION_NAME # will pause script here, waiting for detach or exit
 
 			flock 200
-			python3 session_manager.py "set_running" "$SESSION_NAME" "False"
+			python3 session_manager.py "set-running" "$SESSION_NAME" "False"
 		fi
 	else
 		echo "Creating session in file"
@@ -128,10 +128,46 @@ if [ "$SESSION_EXISTS" ]; then
 		python3 session_manager.py "set-running" "$SESSION_NAME" "True"
 	fi
 else
-	# TODO:
-	# Create session, don't check for manual session creation (I don't want to think about that currently)
-	# Check whether session already exists in serialized form, then get details and create session
-	# Else make default creation
+	if [ "$FILE_HAS_SESSION" ]; then
+		# get session details
+		SESSION_PATH=$(python3 session_manager.py "get-session-path" "$SESSION_NAME")
+		WINDOW_COUNT=$(python3 session_manager.py "get-window-count" "$SESSION_NAME")
+		WINDOW_NAMES=$(python3 session_manager.py "get-window-names" "$SESSION_NAME")
+
+		# create tmux session
+		echo "Creating tmux session from file"
+		tmux new-session -d -s "$SESSION_NAME" -c "$SESSION_PATH"
+		read -r -a WINDOW_NAMES_ARRAY <<< "$WINDOW_NAMES"
+
+		for (( WINDOW_NUMBER=1; WINDOW_NUMBER<=WINDOW_COUNT; WINDOW_NUMBER++ )); do
+			if [ "$WINDOW_NUMBER" = "1"]; then
+				tmux rename-window -t "$SESSION_NAME":"$WINDOW_NUMBER" "${WINDOW_NAMES_ARRAY[$WINDOW_NUMBER-1]}"
+			else
+				tmux new-window -t "$SESSION_NAME" -n "${WINDOW_NAMES_ARRAY[$WINDOW_NUMBER-1]}"
+			fi
+		done
+
+		echo "Attaching tmux session"
+		python3 session_manager.py "set-running" "$SESSION_NAME" "True"
+		flock -u 200
+
+		tmux attach -t "$SESSION_NAME"
+
+		flock 200
+		python session_manager.py "set-running" "$SESSION_NAME" "False"
+	else
+		echo "Creating default tmux session"
+		tmux new-session -d -s "$SESSION_NAME" -c "$SESSION_PATH"
+		python3 session_manager.py "set" "$SESSION_NAME" "$SESSION_PATH" "$WINDOW_COUNT" "$WINDOW_NAMES"
+
+		python3 session_manager.py "set-running" "$SESSION_NAME" "True"
+		flock -u 200
+
+		tmux attach -t "$SESSION_NAME"
+
+		flock 200
+		python3 session_manager.py "set-running" "$SESSION_NAME" "False"
+	fi
 fi
 
 # TODO:
