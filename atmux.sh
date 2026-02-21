@@ -73,7 +73,7 @@ if [ "$SESSION_EXISTS" ]; then
 
 		if [ "$IS_SESSION_RUNNING" = "True" ]; then
 			echo "Session is already running"
-			echo "Hope you called through atmux for running control"
+			echo "Stopping atmux process, please detach safely through tmux"
 			flock -u 200
 
 			exit(0)
@@ -88,8 +88,6 @@ if [ "$SESSION_EXISTS" ]; then
 			python3 session_manager.py "set_running" "$SESSION_NAME" "False"
 		fi
 	else
-		# NOTE: Can be that session exists and is attached in tmux server but not in file. Need to check that as well
-
 		echo "Creating session in file"
 		# Session path
 		SESSION_PATHS=$(tmux list-sessions -F "#{session_name} #{session_path}" 2>/dev/null)
@@ -101,10 +99,24 @@ if [ "$SESSION_EXISTS" ]; then
 
 		# Window count
 		WINDOW_NAMES=$(tmux list-windows -t "$SESSION_NAME" -F \#W 2>/dev/null | tr '\n' ' ')
-		WINDOW_COUNT=$(wc -w <<< "$WINDOW_NAMES")
+		WINDOW_COUNT=$(wc -w <<< "$WINDOW_NAMES") # wc -> word count
 
 		# set in file
 		python3 session_manager.py "set" "$SESSION_NAME" "$SESSION_PATH" "$WINDOW_COUNT" "$WINDOW_NAMES"
+
+		# Check whether session is actually already running
+		while read TMUX_SESSION_NAME IS_RUNNING; do
+			if [ "$TMUX_SESSION_NAME" = "$SESSION_NAME" ]; then
+				if [ "$IS_RUNNING" -gt 0]; then
+					echo "Session is already running, but now also exists in file, good job ;)"
+					echo "Stopping this atmux process"
+					echo "Please detach safely through tmux"
+					flock -u 200
+
+					exit(0)
+				fi
+			fi
+		done <<< "$EXISTING_SESSIONS"
 
 		echo "Attaching to session"
 		python3 session_manager.py "set-running" "$SESSION_NAME" "True"
