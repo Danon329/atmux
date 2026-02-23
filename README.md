@@ -33,4 +33,4 @@ If that doesn't exist, please create it, because I don't have checks yet, that c
 You will get riddled with errors if that happens
 
 If you want to change the saving location, open the atmux.sh file and on the very top there is an export 
-`ATMUX_STATE_FILE`, there you can put your path.
+`ATMUX_SESSIONS_FILE`, there you can put your path.
