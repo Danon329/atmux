@@ -3,7 +3,11 @@
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 SESSION_MANAGER="$SCRIPT_DIR/session_manager.py"
 
-SESSION_NAME="$1"
+SESSION_NAME="default"
+if [ ! -z "$1" ]; then
+	SESSION_NAME="$1"
+fi
+
 MANUAL_CREATION=false
 
 OPTIONS=""
