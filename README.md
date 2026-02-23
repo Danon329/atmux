@@ -25,7 +25,7 @@ Like an ls, delete or get-running-session.
 ``chmod +x atmux.sh``
 
 3. Go to your .zshrc or .bashrc file and add an alias (at least that is what I have done)  
-``alias atmux="$HOME/path/to/your/atmux/file/atmux.sh``
+``alias atmux="$HOME/path/to/your/atmux/file/atmux.sh"``
 
 4. It is ***very*** important that you have this specific folder structure for saving:
 `$HOME/.config/atmux/sessions.json`
