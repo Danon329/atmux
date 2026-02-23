@@ -27,6 +27,10 @@ Like an ls, delete or get-running-session.
 3. Go to your .zshrc or .bashrc file and add an alias (at least that is what I have done)  
 ``alias atmux="$HOME/path/to/your/atmux/file/atmux.sh``
 
-Next I would recommend creating your own sessions.json file. Be careful that it is named like that.  
-You don't have to create your own sessions.json file, but don't be surprised if you will get a python error message, everything should still work fine.  
-``touch sessions.json`` -> inside the same folder where atmux.sh is located.
+4. It is ***very*** important that you have this specific folder structure for saving:
+`$HOME/.config/atmux/sessions.json`
+If that doesn't exist, please create it, because I don't have checks yet, that could create it for you.
+You will get riddled with errors if that happens
+
+If you want to change the saving location, open the atmux.sh file and on the very top there is an export 
+`ATMUX_STATE_FILE`, there you can put your path.

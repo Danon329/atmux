@@ -3,6 +3,8 @@
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 SESSION_MANAGER="$SCRIPT_DIR/session_manager.py"
 
+export ATMUX_SESSIONS_FILE="$HOME/.config/atmux/sessions.json"
+
 SESSION_NAME="default"
 if [ ! -z "$1" ]; then
 	SESSION_NAME="$1"
@@ -144,7 +146,6 @@ else
 		# create tmux session
 		echo "Creating tmux session from file"
 		tmux new-session -d -s "$SESSION_NAME" -c "$SESSION_PATH"
-		# NOTE: Creates session in style name-number, need to rename session
 		read -r -a WINDOW_NAMES_ARRAY <<< "$WINDOW_NAMES"
 
 		for (( WINDOW_NUMBER=1; WINDOW_NUMBER<=WINDOW_COUNT; WINDOW_NUMBER++ )); do
@@ -160,7 +161,7 @@ else
 		
 		tmux attach -t "$SESSION_NAME"
 
-		python "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+		python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
 	else
 		echo "Creating default tmux session"
 		tmux new-session -d -s "$SESSION_NAME" -c "$SESSION_PATH"

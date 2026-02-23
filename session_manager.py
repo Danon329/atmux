@@ -2,23 +2,27 @@ import sys
 import json
 import os
 
-SESSIONS_FILE: str = "sessions.json"
+SESSIONS_FILE: str | None = os.environ.get("ATMUX_SESSIONS_FILE")
 
 
 def load_sessions() -> dict:
-    if not os.path.exists(SESSIONS_FILE):
-        return {}
-
-    with open(SESSIONS_FILE, "r") as file:
-        try:
-            return json.load(file)
-        except json.JSONDecodeError:
+    if SESSIONS_FILE is not None:
+        if not os.path.exists(SESSIONS_FILE):
             return {}
+
+        with open(SESSIONS_FILE, "r") as file:
+            try:
+                return json.load(file)
+            except json.JSONDecodeError:
+                return {}
+
+    return {}
 
 
 def save_sessions(hashmap: dict):
-    with open(SESSIONS_FILE, "w") as file:
-        json.dump(hashmap, file, indent=4)
+    if SESSIONS_FILE is not None:
+        with open(SESSIONS_FILE, "w") as file:
+            json.dump(hashmap, file, indent=4)
 
 
 def check_session_exists(session_name: str) -> str:
