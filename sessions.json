@@ -1,0 +1,8 @@
+{
+    "test": {
+        "session_path": "/Users/daniel/dev/bash_scripts/atmux",
+        "window_count": 1,
+        "window_names": "zsh ",
+        "is_session_running": "False"
+    }
+}
