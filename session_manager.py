@@ -64,6 +64,27 @@ def get_window_names(session_name: str) -> str:
     return session_map[session_name]["window_names"]
 
 
+def get_running_all() -> str:
+    session_map: dict = load_sessions()
+    session_names: str = ""
+
+    for session in session_map:
+        if session_map[session]["is_session_running"] == "True":
+            session_names += session + " "
+
+    return session_names
+
+
+def set_all_running_false():
+    session_map: dict = load_sessions()
+    session_names: list = get_running_all().split()
+
+    for session in session_names:
+        session_map[session]["is_session_running"] = "False"
+
+    save_sessions(session_map)
+
+
 def get_session_running(session_name: str) -> str:
     session_map: dict = load_sessions()
     return session_map[session_name]["is_session_running"]
@@ -72,6 +93,13 @@ def get_session_running(session_name: str) -> str:
 def set_session_running(session_name: str, session_running: str):
     session_map: dict = load_sessions()
     session_map[session_name]["is_session_running"] = session_running
+    save_sessions(session_map)
+
+
+def delete(session_name: str):
+    session_map: dict = load_sessions()
+    del session_map[session_name]
+
     save_sessions(session_map)
 
 
@@ -113,6 +141,18 @@ def main():
                 window_names,
                 "False",  # set running always false, handle it manually through extra call
             )
+        case "set-windows":
+            session_name = sys.argv[2]
+            window_count = int(sys.argv[3])
+            window_names = sys.argv[4]
+
+            set_session(
+                session_name,
+                get_session_path(session_name),
+                window_count,
+                window_names,
+                "False",
+            )
         case "get-session-path":
             session_name = sys.argv[2]
             print(get_session_path(session_name))
@@ -123,8 +163,7 @@ def main():
             session_name = sys.argv[2]
             print(get_window_names(session_name))
         case "get-running-all":
-            # TODO: get all running sessions with running = True. Give them back in one string --format: "session1 session2 session3"
-            pass
+            print(get_running_all())
         case "get-running":
             session_name = sys.argv[2]
             print(get_session_running(session_name))
@@ -133,9 +172,10 @@ def main():
             is_session_running = sys.argv[3]
             set_session_running(session_name, is_session_running)
         case "set-all-running-false":
-            # TODO: Write a function that iterates through all sessions and sets them false
-            pass
-        # TODO: Create a delete session function, if session gets exited
+            set_all_running_false()
+        case "delete":
+            session_name = sys.argv[2]
+            delete(session_name)
 
 
 if __name__ == "__main__":

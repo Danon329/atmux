@@ -2,7 +2,7 @@
 
 exec 200>/tmp/atmux.lock
 
-SESSION_NAME="0"
+SESSION_NAME="default"
 MANUAL_CREATION=false
 
 # get option flags
@@ -176,3 +176,23 @@ fi
 # if delete, delete from file
 # else:
 # After detaching, get windows of current session, to serialize in file, with the names
+EXISTING_SESSIONS=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | tr '\n' ' ')
+ANSWER="n"
+
+if [[ " $EXISTING_SESSIONS " != *" $SESSION_NAME "* ]]; then
+	echo "You have exited the current session, do you want to delete the session from file? [y/n]"
+	read ANSWER
+
+	if [ "$ANSWER" = "y"]; then
+		python3 session_manager.py "delete" "$SESSION_NAME"
+	fi
+
+	flock -u 200
+else
+	WINDOW_NAMES=$(tmux list-windows -t "$SESSION_NAME" -F \#W 2>/dev/null | tr '\n' ' ')
+	WINDOW_COUNT=$(wc -w <<< "$WINDOW_NAMES")
+
+	python3 session_manager.py "set-windows" "$SESSION_NAME" "$WINDOW_COUNT" "$WINDOW_NAMES"
+
+	flock -u 200
+fi
