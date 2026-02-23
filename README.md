@@ -3,6 +3,9 @@
 Could also be that that is some kind of tmux wrapper. Don't know how to classify it.
 I pretty much just want to add stuff to tmux, which absence kind of annoys me :)
 
+Well absence is the wrong word. It exists also in tmux, but can be done easier for the user, at least for the tracking of running sessions.
+Serialization is a story of its own.
+
 ### So what have I added?
 
 * Serialization of tmux sessions
@@ -11,7 +14,7 @@ I pretty much just want to add stuff to tmux, which absence kind of annoys me :)
 Thats it, currently.
 
 I still want to add more "settings" options.
-Like an ls or a delete.
+Like an ls, delete or get-running-session.
 
 ## How to get it to work?
 
