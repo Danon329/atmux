@@ -1,4 +1,5 @@
 #!/bin/bash
+# TODO: Create functions, for all the repeating code
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 SESSION_MANAGER="$SCRIPT_DIR/session_manager.py"
@@ -29,9 +30,6 @@ while getopts "a:m" opts; do
 			;;
 	esac
 done
-
-# Start file lock
-
 
 # Get tmux sessions
 echo "Getting existing tmux sessions"
@@ -88,15 +86,25 @@ if [ "$SESSION_EXISTS" = "true" ]; then
 			echo "Session is already running"
 			echo "Stopping atmux process, please detach safely through tmux"
 			
-
 			exit
 		else
-			echo "Attaching session"
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
+			# Check for the $TMUX variable
+			if [ ! -z "$TMUX" ]; then
+				echo "We are in a session"
+				echo "Switching session"
+				python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
 
-			tmux attach -t $SESSION_NAME # will pause script here, waiting for detach or exit
+				tmux switch-client -t "$SESSION_NAME"
 
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+				python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+			else
+				echo "Attaching session"
+				python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
+
+				tmux attach -t $SESSION_NAME # will pause script here, waiting for detach or exit
+
+				python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+			fi
 		fi
 	else
 		echo "Creating session in file"
@@ -122,19 +130,29 @@ if [ "$SESSION_EXISTS" = "true" ]; then
 					echo "Session is already running, but now also exists in file, good job ;)"
 					echo "Stopping this atmux process"
 					echo "Please detach safely through tmux"
-					
 
 					exit
 				fi
 			fi
 		done <<< "$EXISTING_SESSIONS"
 
-		echo "Attaching to session"
-		python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
-		
-		tmux attach -t "$SESSION_NAME"
+		# Check for the $TMUX variable
+		if [ ! -z "$TMUX" ]; then
+			echo "We are in a session"
+			echo "Switching session"
+			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
 
-		python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
+			tmux switch-client -t "$SESSION_NAME"
+
+			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+		else
+			echo "Attaching to session"
+			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
+			
+			tmux attach -t "$SESSION_NAME"
+
+			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
+		fi 
 	fi
 else
 	if [ "$FILE_HAS_SESSION" = "True" ]; then
@@ -156,22 +174,44 @@ else
 			fi
 		done
 
-		echo "Attaching tmux session"
-		python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
-		
-		tmux attach -t "$SESSION_NAME"
+		# Checking for TMUX session
+		if [ ! -z "$TMUX" ]; then
+			echo "We are in a session"
+			echo "Switching session"
+			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
 
-		python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+			tmux switch-client -t "$SESSION_NAME"
+
+			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+		else
+			echo "Attaching tmux session"
+			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
+			
+			tmux attach -t "$SESSION_NAME"
+
+			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+		fi
 	else
 		echo "Creating default tmux session"
 		tmux new-session -d -s "$SESSION_NAME" -c "$SESSION_PATH"
 		python3 "$SESSION_MANAGER" "set" "$SESSION_NAME" "$SESSION_PATH" "$WINDOW_COUNT" "$WINDOW_NAMES"
 
-		python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
-		
-		tmux attach -t "$SESSION_NAME"
+		if [ ! -z "$TMUX" ]; then
+			echo "We are in a session"
+			echo "Switching session"
+			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
 
-		python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+			tmux switch-client -t "$SESSION_NAME"
+
+			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+		else
+			echo "Attaching to session"
+			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
+			
+			tmux attach -t "$SESSION_NAME"
+
+			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+		fi
 	fi
 fi
 
