@@ -96,8 +96,11 @@ def get_session_running(session_name: str) -> str:
 
 def set_session_running(session_name: str, session_running: str):
     session_map: dict = load_sessions()
-    session_map[session_name]["is_session_running"] = session_running
-    save_sessions(session_map)
+
+    for session in session_map:
+        if session == session_name:
+            session_map[session_name]["is_session_running"] = session_running
+            save_sessions(session_map)
 
 
 def delete(session_name: str):

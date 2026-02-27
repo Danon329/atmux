@@ -31,6 +31,26 @@ while getopts "a:m" opts; do
 	esac
 done
 
+activate_session() {
+	# Check for the $TMUX variable
+	if [ ! -z "$TMUX" ]; then
+		echo "We are in a session"
+		echo "Switching session"
+		python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
+
+		tmux switch-client -t "$SESSION_NAME"
+
+		python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+	else
+		echo "Attaching session"
+		python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
+
+		tmux attach -t $SESSION_NAME # will pause script here, waiting for detach or exit
+
+		python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
+	fi
+}
+
 # Get tmux sessions
 echo "Getting existing tmux sessions"
 EXISTING_SESSIONS=$(tmux list-sessions -F "#{session_name} #{session_attached}" 2>/dev/null)
@@ -88,23 +108,7 @@ if [ "$SESSION_EXISTS" = "true" ]; then
 			
 			exit
 		else
-			# Check for the $TMUX variable
-			if [ ! -z "$TMUX" ]; then
-				echo "We are in a session"
-				echo "Switching session"
-				python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
-
-				tmux switch-client -t "$SESSION_NAME"
-
-				python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
-			else
-				echo "Attaching session"
-				python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
-
-				tmux attach -t $SESSION_NAME # will pause script here, waiting for detach or exit
-
-				python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
-			fi
+			activate_session
 		fi
 	else
 		echo "Creating session in file"
@@ -136,23 +140,7 @@ if [ "$SESSION_EXISTS" = "true" ]; then
 			fi
 		done <<< "$EXISTING_SESSIONS"
 
-		# Check for the $TMUX variable
-		if [ ! -z "$TMUX" ]; then
-			echo "We are in a session"
-			echo "Switching session"
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
-
-			tmux switch-client -t "$SESSION_NAME"
-
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
-		else
-			echo "Attaching to session"
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
-			
-			tmux attach -t "$SESSION_NAME"
-
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
-		fi 
+		activate_session
 	fi
 else
 	if [ "$FILE_HAS_SESSION" = "True" ]; then
@@ -174,44 +162,13 @@ else
 			fi
 		done
 
-		# Checking for TMUX session
-		if [ ! -z "$TMUX" ]; then
-			echo "We are in a session"
-			echo "Switching session"
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
-
-			tmux switch-client -t "$SESSION_NAME"
-
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
-		else
-			echo "Attaching tmux session"
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
-			
-			tmux attach -t "$SESSION_NAME"
-
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
-		fi
+		activate_session
 	else
 		echo "Creating default tmux session"
 		tmux new-session -d -s "$SESSION_NAME" -c "$SESSION_PATH"
 		python3 "$SESSION_MANAGER" "set" "$SESSION_NAME" "$SESSION_PATH" "$WINDOW_COUNT" "$WINDOW_NAMES"
 
-		if [ ! -z "$TMUX" ]; then
-			echo "We are in a session"
-			echo "Switching session"
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
-
-			tmux switch-client -t "$SESSION_NAME"
-
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
-		else
-			echo "Attaching to session"
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "True"
-			
-			tmux attach -t "$SESSION_NAME"
-
-			python3 "$SESSION_MANAGER" "set-running" "$SESSION_NAME" "False"
-		fi
+		activate_session
 	fi
 fi
 
