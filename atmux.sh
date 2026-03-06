@@ -1,35 +1,53 @@
 #!/bin/bash
-# TODO: Create functions, for all the repeating code
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 SESSION_MANAGER="$SCRIPT_DIR/session_manager.py"
 
 export ATMUX_SESSIONS_FILE="$HOME/.config/atmux/sessions.json"
 
+list_sessions () {
+	python3 "$SESSION_MANAGER" "get-sessions"
+}
+
 SESSION_NAME="default"
-if [ ! -z "$1" ]; then
-	SESSION_NAME="$1"
-fi
-
 MANUAL_CREATION=false
-
 OPTIONS=""
+
 # TODO: Add options like in tmux (ls, delete, rename, etc)
 # NOTE: Maybe do manual creation, still thinking about it
 
 # get option flags
-while getopts "a:m" opts; do
+while getopts "a:d:r:" opts; do
 	case $opts in
 		a)
 			if [ ! -z "$OPTARG" ]; then
 				OPTIONS="$OPTARG"
 			fi
 			;;
-		m)
-			MANUAL_CREATION=true
+		d)
+			SESSION_NAME="$OPTARG"
+			python3 "$SESSION_MANAGER" "delete" "$SESSION_NAME"
+			exit
+			;;
+		r)
+			# rename session to -> new session
+			;;
+		?)
 			;;
 	esac
 done
+
+shift $((OPTIND - 1))
+
+if [ ! -z "$1" ]; then
+	SESSION_NAME="$1"
+	case "$SESSION_NAME" in
+		"ls" | "list-sessions")
+			list_sessions
+			exit
+			;;
+	esac
+fi
 
 activate_session() {
 	# Check for the $TMUX variable
@@ -183,7 +201,6 @@ if [[ " $EXISTING_SESSIONS " != *" $SESSION_NAME "* ]]; then
 		python3 "$SESSION_MANAGER" "delete" "$SESSION_NAME"
 	fi
 
-	
 else
 	WINDOW_NAMES=$(tmux list-windows -t "$SESSION_NAME" -F \#W 2>/dev/null | tr '\n' ' ')
 	WINDOW_COUNT=$(wc -w <<< "$WINDOW_NAMES")

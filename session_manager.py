@@ -53,6 +53,16 @@ def set_session(
     save_sessions(session_map)
 
 
+def get_sessions() -> str:
+    session_map: dict = load_sessions()
+    session_names: str = ""
+
+    for key in session_map:
+        session_names += key + "\n"
+
+    return session_names
+
+
 def get_session_path(session_name: str) -> str:
     session_map: dict = load_sessions()
     return session_map[session_name]["session_path"]
@@ -160,6 +170,8 @@ def main():
                 window_names,
                 "False",
             )
+        case "get-sessions":
+            print(get_sessions())
         case "get-session-path":
             session_name = sys.argv[2]
             print(get_session_path(session_name))
