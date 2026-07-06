@@ -113,6 +113,15 @@ def set_session_running(session_name: str, session_running: str):
             save_sessions(session_map)
 
 
+def rename(session_name: str, new_name: str):
+    session_map: dict = load_sessions()
+    session_details: dict = session_map[session_name]
+    del session_map[session_name]
+
+    session_map[new_name] = session_details
+    save_sessions(session_map)
+
+
 def delete(session_name: str):
     session_map: dict = load_sessions()
     del session_map[session_name]
@@ -192,6 +201,10 @@ def main():
             set_session_running(session_name, is_session_running)
         case "set-all-running-false":
             set_all_running_false()
+        case "rename":
+            session_name = sys.argv[2]
+            new_session_name = sys.argv[3]
+            rename(session_name, new_session_name)
         case "delete":
             session_name = sys.argv[2]
             delete(session_name)

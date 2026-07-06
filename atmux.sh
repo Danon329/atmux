@@ -14,6 +14,10 @@ MANUAL_CREATION=false
 OPTIONS=""
 
 # TODO: Add options like in tmux (ls, delete, rename, etc)
+
+# NOTE: When the session has more than 1 pane, the second doesn't
+# NOTE: go to the session folder as needed. SOLVE THAT!!!
+
 # NOTE: Maybe do manual creation, still thinking about it
 
 # get option flags
@@ -25,12 +29,29 @@ while getopts "a:d:r:" opts; do
 			fi
 			;;
 		d)
-			SESSION_NAME="$OPTARG"
-			python3 "$SESSION_MANAGER" "delete" "$SESSION_NAME"
+			if [ ! -z "$OPTARG" ]; then
+				SESSION_NAME="$OPTARG"
+				python3 "$SESSION_MANAGER" "delete" "$SESSION_NAME"
+				tmux kill-session -t "$SESSION_NAME"
+			fi
 			exit
 			;;
 		r)
 			# rename session to -> new session
+			# TODO: Call python3, get two names in 1 String split into 2 names, etc ...
+			# atmux -r current_session_name new_session_name
+			# THINK AGAIN
+			if [ ! -z "$OPTARG" ]; then
+				echo "Entered the if conditional"
+				OLD_NAME="$OPTARG"
+				NEW_NAME="${!OPTIND}"
+				OPTIND=$((OPTIND + 1))
+
+				python3 "$SESSION_MANAGER" "rename" "$OLD_NAME" "$NEW_NAME"
+				tmux rename-session -t "$OLD_NAME" "$NEW_NAME"
+				echo "Should have finished renaming"
+			fi
+			exit
 			;;
 		?)
 			;;
@@ -148,7 +169,7 @@ if [ "$SESSION_EXISTS" = "true" ]; then
 		# Check whether session is actually already running
 		while read TMUX_SESSION_NAME IS_RUNNING; do
 			if [ "$TMUX_SESSION_NAME" = "$SESSION_NAME" ]; then
-				if [ "$IS_RUNNING" -gt 0]; then
+				if [ "$IS_RUNNING" -gt 0 ]; then
 					echo "Session is already running, but now also exists in file, good job ;)"
 					echo "Stopping this atmux process"
 					echo "Please detach safely through tmux"
